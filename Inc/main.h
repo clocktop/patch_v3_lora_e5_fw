@@ -78,7 +78,7 @@ void Error_Handler(void);
 #define RF_SW_CTRL2_Pin GPIO_PIN_5
 #define RF_SW_CTRL2_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
-
+#define SD_SPI_HANDLE hspi2
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
