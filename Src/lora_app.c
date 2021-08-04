@@ -93,6 +93,27 @@ static void SendTxData(void);
 static void OnTxTimerEvent(void *context);
 
 /**
+  * @brief  LED Tx timer callback function
+  * @param  LED context
+  * @retval none
+  */
+static void OnTxTimerLedEvent(void *context);
+
+/**
+  * @brief  LED Rx timer callback function
+  * @param  LED context
+  * @retval none
+  */
+static void OnRxTimerLedEvent(void *context);
+
+/**
+  * @brief  LED Join timer callback function
+  * @param  LED context
+  * @retval none
+  */
+static void OnJoinTimerLedEvent(void *context);
+
+/**
   * @brief  join event callback function
   * @param  joinParams status of join
   */
@@ -176,6 +197,19 @@ static UTIL_TIMER_Object_t RxLedTimer;
   * @brief Timer to handle the application Join Led to toggle
   */
 static UTIL_TIMER_Object_t JoinLedTimer;
+
+static uint8_t AppDataBuffer[LORAWAN_APP_DATA_BUFFER_MAX_SIZE];
+
+/**
+  * @brief User application data structure
+  */
+static LmHandlerAppData_t AppData = { 0, 0, AppDataBuffer };
+
+static ActivationType_t ActivationType = LORAWAN_DEFAULT_ACTIVATION_TYPE;
+/**
+  * @brief Specifies the state of the application LED
+  */
+static uint8_t AppLedStateOn = RESET;
 /* USER CODE END PV */
 
 /* Exported functions ---------------------------------------------------------*/
@@ -258,6 +292,64 @@ void LoRaWAN_Init(void)
 static void OnRxData(LmHandlerAppData_t *appData, LmHandlerRxParams_t *params)
 {
   /* USER CODE BEGIN OnRxData_1 */
+  if ((appData != NULL) && (params != NULL))
+  {
+  // add in rx led turning on here
+  UTIL_TIMER_Start(&RxLedTimer);
+
+    static const char *slotStrings[] = { "1", "2", "C", "C Multicast", "B Ping-Slot", "B Multicast Ping-Slot" };
+
+    APP_LOG(TS_OFF, VLEVEL_M, "\r\n###### ========== MCPS-Indication ==========\r\n");
+    APP_LOG(TS_OFF, VLEVEL_H, "###### D/L FRAME:%04d | SLOT:%s | PORT:%d | DR:%d | RSSI:%d | SNR:%d\r\n",
+            params->DownlinkCounter, slotStrings[params->RxSlot], appData->Port, params->Datarate, params->Rssi, params->Snr);
+    switch (appData->Port)
+    {
+      case LORAWAN_SWITCH_CLASS_PORT:
+        /*this port switches the class*/
+        if (appData->BufferSize == 1)
+        {
+          switch (appData->Buffer[0])
+          {
+            case 0:
+            {
+              LmHandlerRequestClass(CLASS_A);
+              break;
+            }
+            case 1:
+            {
+              LmHandlerRequestClass(CLASS_B);
+              break;
+            }
+            case 2:
+            {
+              LmHandlerRequestClass(CLASS_C);
+              break;
+            }
+            default:
+              break;
+          }
+        }
+        break;
+      case LORAWAN_USER_APP_PORT:
+        if (appData->BufferSize == 1)
+        {
+          AppLedStateOn = appData->Buffer[0] & 0x01;
+          if (AppLedStateOn == RESET)
+          {
+            APP_LOG(TS_OFF, VLEVEL_H,   "LED OFF\r\n");
+            // use this to swtich led
+          }
+           else
+          {
+            APP_LOG(TS_OFF, VLEVEL_H, "LED ON\r\n")
+            //toggle off led
+          }
+        }
+          break;
+        default:
+        break;
+    }
+  }
   /* USER CODE END OnRxData_1 */
 }
 
