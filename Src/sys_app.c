@@ -144,11 +144,30 @@ void SystemApp_Init(void)
 void UTIL_SEQ_Idle(void)
 {
   /* USER CODE BEGIN UTIL_SEQ_Idle_1 */
-
+  uint8_t ret = 0;
+  static uint32_t count = 0;
   /* USER CODE END UTIL_SEQ_Idle_1 */
   UTIL_LPM_EnterLowPower();
   /* USER CODE BEGIN UTIL_SEQ_Idle_2 */
-
+  if(count++ > 50)
+  {
+    switch (ret)
+    {
+      case 1:
+        APP_LOG(TS_ON, VLEVEL_L, "&&&&&****** Sleep &&&&&******\r\n");
+        break;
+      case 2:
+        APP_LOG(TS_ON, VLEVEL_L, "&&&&&****** Stop &&&&&******\r\n");
+        break;
+      case 3:
+        APP_LOG(TS_ON, VLEVEL_L, "&&&&&****** Off &&&&&******\r\n");
+        break;
+      default:
+        break;
+    }
+    count = 0;
+  } 
+  
   /* USER CODE END UTIL_SEQ_Idle_2 */
 }
 

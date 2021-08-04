@@ -93,27 +93,6 @@ static void SendTxData(void);
 static void OnTxTimerEvent(void *context);
 
 /**
-  * @brief  LED Tx timer callback function
-  * @param  LED context
-  * @retval none
-  */
-static void OnTxTimerLedEvent(void *context);
-
-/**
-  * @brief  LED Rx timer callback function
-  * @param  LED context
-  * @retval none
-  */
-static void OnRxTimerLedEvent(void *context);
-
-/**
-  * @brief  LED Join timer callback function
-  * @param  LED context
-  * @retval none
-  */
-static void OnJoinTimerLedEvent(void *context);
-
-/**
   * @brief  join event callback function
   * @param  joinParams status of join
   */
@@ -139,7 +118,25 @@ static void OnRxData(LmHandlerAppData_t *appData, LmHandlerRxParams_t *params);
 static void OnMacProcessNotify(void);
 
 /* USER CODE BEGIN PFP */
+/**
+  * @brief  LED Tx timer callback function
+  * @param  LED context
+  * @retval none
+  */
+static void OnTxTimerLedEvent(void *context);
 
+/**
+  * @brief  LED Rx timer callback function
+  * @param  LED context
+  * @retval none
+  */
+static void OnRxTimerLedEvent(void *context);
+/**
+  * @brief  LED Join timer callback function
+  * @param  LED context
+  * @retval none
+  */
+static void OnJoinTimerLedEvent(void *context);
 /* USER CODE END PFP */
 
 /* Private variables ---------------------------------------------------------*/
@@ -473,8 +470,8 @@ static void OnTxData(LmHandlerTxParams_t *params)
     {
       APP_LOG(TS_OFF, VLEVEL_H, "UNCONFIRMED\r\n");
     }
-  /* USER CODE END OnTxData_1 */
   }
+  /* USER CODE END OnTxData_1 */
 }
 
 static void OnJoinRequest(LmHandlerJoinParams_t *joinParams)
