@@ -81,14 +81,19 @@ static void TimestampNow(uint8_t *buff, uint16_t *size);
 static void tiny_snprintf_like(char *buf, uint32_t maxsize, const char *strFormat, ...);
 
 /* USER CODE BEGIN PFP */
-
+/**
+  * @brief  Set all pins such to minimized consumption (necessary for some STM32 families)
+  * @param none
+  * @retval None
+  */
+static void Gpio_PreInit(void);
 /* USER CODE END PFP */
 
 /* Exported functions ---------------------------------------------------------*/
 void SystemApp_Init(void)
 {
   /* USER CODE BEGIN SystemApp_Init_1 */
-
+  Gpio_PreInit();
   /* USER CODE END SystemApp_Init_1 */
 
   /* Ensure that MSI is wake-up system clock */
@@ -309,7 +314,44 @@ static void tiny_snprintf_like(char *buf, uint32_t maxsize, const char *strForma
 }
 
 /* USER CODE BEGIN PrFD */
+static void Gpio_PreInit(void)
+{
+  /* USER CODE BEGIN Gpio_PreInit_1 */
 
+  /* USER CODE END Gpio_PreInit_1 */
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  /* Configure all IOs in analog input              */
+  /* Except PA143 and PA14 (SWCLK and SWD) for debug*/
+  /* PA13 and PA14 are configured in debug_init     */
+  /* Configure all GPIO as analog to reduce current consumption on non used IOs */
+  /* Enable GPIOs clock */
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOH_CLK_ENABLE();
+
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  /* All GPIOs except debug pins (SWCLK and SWD) */
+  GPIO_InitStruct.Pin = GPIO_PIN_All & (~(GPIO_PIN_13 | GPIO_PIN_14));
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /* All GPIOs */
+  GPIO_InitStruct.Pin = GPIO_PIN_All;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
+
+  /* Disable GPIOs clock */
+  __HAL_RCC_GPIOA_CLK_DISABLE();
+  __HAL_RCC_GPIOB_CLK_DISABLE();
+  __HAL_RCC_GPIOC_CLK_DISABLE();
+  __HAL_RCC_GPIOH_CLK_DISABLE();
+  /* USER CODE BEGIN Gpio_PreInit_2 */
+
+  /* USER CODE END Gpio_PreInit_2 */
+}
 /* USER CODE END PrFD */
 
 /* HAL overload functions ---------------------------------------------------------*/
