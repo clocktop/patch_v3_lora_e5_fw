@@ -73,10 +73,10 @@ void Error_Handler(void);
 #define BTN_Pin GPIO_PIN_0
 #define BTN_GPIO_Port GPIOA
 #define BTN_EXTI_IRQn EXTI0_IRQn
-#define RF_CTRL1_Pin GPIO_PIN_4
-#define RF_CTRL1_GPIO_Port GPIOA
-#define RF_CTRL2_Pin GPIO_PIN_5
-#define RF_CTRL2_GPIO_Port GPIOA
+#define RF_SW_CTRL1_Pin GPIO_PIN_4
+#define RF_SW_CTRL1_GPIO_Port GPIOA
+#define RF_SW_CTRL2_Pin GPIO_PIN_5
+#define RF_SW_CTRL2_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

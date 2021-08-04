@@ -60,7 +60,7 @@ extern "C" {
 
 #else
 /* USER CODE BEGIN Exported Parameters */
-
+#define RF_WAKEUP_TIME                      10U
 /* USER CODE END Exported Parameters */
 /* Indicates the type of switch between the ones proposed by CONFIG Constants
  */
@@ -90,7 +90,11 @@ extern "C" {
 
 #else
 /* USER CODE BEGIN Exported PinMapping */
-#warning user to provide its board definitions pins
+//#warning user to provide its board definitions pins
+#define RF_TCXO_VCC_Pin                          GPIO_PIN_0
+#define RF_TCXO_VCC_GPIO_Port                    GPIOB
+#define RF_TCXO_VCC_CLK_ENABLE()                 __HAL_RCC_GPIOB_CLK_ENABLE()
+#define RF_TCXO_VCC_CLK_DISABLE()                __HAL_RCC_GPIOB_CLK_DISABLE()
 /* USER CODE END Exported PinMapping */
 #endif  /* USE_BSP_DRIVER  */
 

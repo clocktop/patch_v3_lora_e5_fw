@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "main.h": "c",
+        "radio_board_if.h": "c",
+        "platform.h": "c",
+        "gpio.h": "c"
+    }
+}
