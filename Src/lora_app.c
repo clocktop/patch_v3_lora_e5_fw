@@ -162,6 +162,20 @@ static TxEventType_t EventType = TX_ON_TIMER;
 static UTIL_TIMER_Object_t TxTimer;
 
 /* USER CODE BEGIN PV */
+/**
+  * @brief Timer to handle the application Tx Led to toggle
+  */
+static UTIL_TIMER_Object_t TxLedTimer;
+
+/**
+  * @brief Timer to handle the application Rx Led to toggle
+  */
+static UTIL_TIMER_Object_t RxLedTimer;
+
+/**
+  * @brief Timer to handle the application Join Led to toggle
+  */
+static UTIL_TIMER_Object_t JoinLedTimer;
 /* USER CODE END PV */
 
 /* Exported functions ---------------------------------------------------------*/
@@ -172,7 +186,30 @@ static UTIL_TIMER_Object_t TxTimer;
 void LoRaWAN_Init(void)
 {
   /* USER CODE BEGIN LoRaWAN_Init_1 */
+  /* Get LoRa APP version*/
+  APP_LOG(TS_OFF, VLEVEL_M, "APP_VERSION:        V%X.%X.%X\r\n",
+          (uint8_t)(__LORA_APP_VERSION >> __APP_VERSION_MAIN_SHIFT),
+          (uint8_t)(__LORA_APP_VERSION >> __APP_VERSION_SUB1_SHIFT),
+          (uint8_t)(__LORA_APP_VERSION >> __APP_VERSION_SUB2_SHIFT));
 
+  /* Get MW LoraWAN info */
+  APP_LOG(TS_OFF, VLEVEL_M, "MW_LORAWAN_VERSION: V%X.%X.%X\r\n",
+          (uint8_t)(__LORAWAN_VERSION >> __APP_VERSION_MAIN_SHIFT),
+          (uint8_t)(__LORAWAN_VERSION >> __APP_VERSION_SUB1_SHIFT),
+          (uint8_t)(__LORAWAN_VERSION >> __APP_VERSION_SUB2_SHIFT));
+
+  /* Get MW SubGhz_Phy info */
+  APP_LOG(TS_OFF, VLEVEL_M, "MW_RADIO_VERSION:   V%X.%X.%X\r\n",
+          (uint8_t)(__SUBGHZ_PHY_VERSION >> __APP_VERSION_MAIN_SHIFT),
+          (uint8_t)(__SUBGHZ_PHY_VERSION >> __APP_VERSION_SUB1_SHIFT),
+          (uint8_t)(__SUBGHZ_PHY_VERSION >> __APP_VERSION_SUB2_SHIFT));
+  
+  UTIL_TIMER_Create(&TxLedTimer, 0xFFFFFFFFU, UTIL_TIMER_ONESHOT, OnTxTimerLedEvent, NULL);
+  UTIL_TIMER_Create(&RxLedTimer, 0xFFFFFFFFU, UTIL_TIMER_ONESHOT, OnRxTimerLedEvent, NULL);
+  UTIL_TIMER_Create(&JoinLedTimer, 0xFFFFFFFFU, UTIL_TIMER_PERIODIC, OnJoinTimerLedEvent, NULL);
+  UTIL_TIMER_SetPeriod(&TxLedTimer, 50);
+  UTIL_TIMER_SetPeriod(&RxLedTimer, 100);
+  UTIL_TIMER_SetPeriod(&JoinLedTimer, 200);
   /* USER CODE END LoRaWAN_Init_1 */
 
   UTIL_SEQ_RegTask((1 << CFG_SEQ_Task_LmHandlerProcess), UTIL_SEQ_RFU, LmHandlerProcess);
@@ -186,6 +223,7 @@ void LoRaWAN_Init(void)
   LmHandlerConfigure(&LmHandlerParams);
 
   /* USER CODE BEGIN LoRaWAN_Init_2 */
+  UTIL_TIMER_Start(&JoinLedTimer);
   /* USER CODE END LoRaWAN_Init_2 */
 
   LmHandlerJoin(ActivationType);
@@ -245,7 +283,20 @@ static void OnTxTimerEvent(void *context)
 }
 
 /* USER CODE BEGIN PrFD_LedEvents */
+static void OnTxTimerLedEvent(void *context)
+{
+  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+}
 
+static void OnRxTimerLedEvent(void *context)
+{
+  //toggle another led on main board
+}
+
+static void OnJoinTimerLedEvent(void *context)
+{
+  HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
+}
 /* USER CODE END PrFD_LedEvents */
 
 static void OnTxData(LmHandlerTxParams_t *params)
