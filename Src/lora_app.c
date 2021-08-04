@@ -205,7 +205,6 @@ static uint8_t AppDataBuffer[LORAWAN_APP_DATA_BUFFER_MAX_SIZE];
   */
 static LmHandlerAppData_t AppData = { 0, 0, AppDataBuffer };
 
-static ActivationType_t ActivationType = LORAWAN_DEFAULT_ACTIVATION_TYPE;
 /**
   * @brief Specifies the state of the application LED
   */
@@ -356,7 +355,69 @@ static void OnRxData(LmHandlerAppData_t *appData, LmHandlerRxParams_t *params)
 static void SendTxData(void)
 {
   /* USER CODE BEGIN SendTxData_1 */
+  uint16_t pressure = 0;
+  int16_t temperature = 0;
+  sensor_t sensor_data;
+  UTIL_TIMER_Time_t nextTxIn = 0;
 
+  uint16_t humidity = 0;
+  uint32_t i = 0;
+  int32_t latitude = 0;
+  int32_t longitude = 0;
+  uint16_t altitudeGps = 0;
+
+  EnvSensors_Read(&sensor_data);
+  temperature = (SYS_GetTemperatureLevel() >> 8);
+  pressure    = (uint16_t)(sensor_data.pressure * 100 / 10);      /* in hPa / 10 */
+
+  AppData.Port = LORAWAN_USER_APP_PORT;
+  humidity    = (uint16_t)(sensor_data.humidity * 10);            /* in %*10     */
+
+  AppData.Buffer[i++] = AppLedStateOn;
+  AppData.Buffer[i++] = (uint8_t)((pressure >> 8) & 0xFF);
+  AppData.Buffer[i++] = (uint8_t)(pressure & 0xFF);
+  AppData.Buffer[i++] = (uint8_t)(temperature & 0xFF);
+  AppData.Buffer[i++] = (uint8_t)((humidity >> 8) & 0xFF);
+  AppData.Buffer[i++] = (uint8_t)(humidity & 0xFF);
+
+  if ((LmHandlerParams.ActiveRegion == LORAMAC_REGION_US915) || (LmHandlerParams.ActiveRegion == LORAMAC_REGION_AU915)
+      || (LmHandlerParams.ActiveRegion == LORAMAC_REGION_AS923))
+  {
+    AppData.Buffer[i++] = 0;
+    AppData.Buffer[i++] = 0;
+    AppData.Buffer[i++] = 0;
+    AppData.Buffer[i++] = 0;
+  }
+  else
+  {
+    latitude = sensor_data.latitude;
+    longitude = sensor_data.longitude;
+
+    AppData.Buffer[i++] = GetBatteryLevel();        /* 1 (very low) to 254 (fully charged) */
+    AppData.Buffer[i++] = (uint8_t)((latitude >> 16) & 0xFF);
+    AppData.Buffer[i++] = (uint8_t)((latitude >> 8) & 0xFF);
+    AppData.Buffer[i++] = (uint8_t)(latitude & 0xFF);
+    AppData.Buffer[i++] = (uint8_t)((longitude >> 16) & 0xFF);
+    AppData.Buffer[i++] = (uint8_t)((longitude >> 8) & 0xFF);
+    AppData.Buffer[i++] = (uint8_t)(longitude & 0xFF);
+    AppData.Buffer[i++] = (uint8_t)((altitudeGps >> 8) & 0xFF);
+    AppData.Buffer[i++] = (uint8_t)(altitudeGps & 0xFF);
+  }
+
+  AppData.BufferSize = i;
+  if (LmHandlerSetTxPower(TX_POWER_14) == LORAMAC_HANDLER_ERROR)
+  {
+	APP_LOG(TS_OFF, VLEVEL_M, "\r\n###### ========== Didn't set tx power ==========\r\n");
+  }
+
+  if (LORAMAC_HANDLER_SUCCESS == LmHandlerSend(&AppData, LORAWAN_DEFAULT_CONFIRMED_MSG_STATE, &nextTxIn, false))
+  {
+    APP_LOG(TS_ON, VLEVEL_L, "SEND REQUEST\r\n");
+  }
+  else if (nextTxIn > 0)
+  {
+    APP_LOG(TS_ON, VLEVEL_L, "Next Tx in  : ~%d second(s)\r\n", (nextTxIn / 1000));
+  }
   /* USER CODE END SendTxData_1 */
 }
 
@@ -394,12 +455,54 @@ static void OnJoinTimerLedEvent(void *context)
 static void OnTxData(LmHandlerTxParams_t *params)
 {
   /* USER CODE BEGIN OnTxData_1 */
+  if ((params != NULL) && (params->IsMcpsConfirm != 0))
+  {
+    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+    UTIL_TIMER_Start(&TxLedTimer);
+
+    APP_LOG(TS_OFF, VLEVEL_M, "\r\n###### ========== MCPS-Confirm =============\r\n");
+    APP_LOG(TS_OFF, VLEVEL_H, "###### U/L FRAME:%04d | PORT:%d | DR:%d | PWR:%d", params->UplinkCounter,
+            params->AppData.Port, params->Datarate, params->TxPower);
+
+    APP_LOG(TS_OFF, VLEVEL_H, " | MSG TYPE:");
+    if (params->MsgType == LORAMAC_HANDLER_CONFIRMED_MSG)
+    {
+      APP_LOG(TS_OFF, VLEVEL_H, "CONFIRMED [%s]\r\n", (params->AckReceived != 0) ? "ACK" : "NACK");
+    }
+    else
+    {
+      APP_LOG(TS_OFF, VLEVEL_H, "UNCONFIRMED\r\n");
+    }
   /* USER CODE END OnTxData_1 */
+  }
 }
 
 static void OnJoinRequest(LmHandlerJoinParams_t *joinParams)
 {
   /* USER CODE BEGIN OnJoinRequest_1 */
+  if (joinParams != NULL)
+  {
+    if (joinParams->Status == LORAMAC_HANDLER_SUCCESS)
+    {
+      UTIL_TIMER_Stop(&JoinLedTimer);
+
+      HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+
+      APP_LOG(TS_OFF, VLEVEL_M, "\r\n###### = JOINED = ");
+      if (joinParams->Mode == ACTIVATION_TYPE_ABP)
+      {
+        APP_LOG(TS_OFF, VLEVEL_M, "ABP ======================\r\n");
+      }
+      else
+      {
+        APP_LOG(TS_OFF, VLEVEL_M, "OTAA =====================\r\n");
+      }
+    }
+    else
+    {
+      APP_LOG(TS_OFF, VLEVEL_M, "\r\n###### = JOIN FAILED\r\n");
+    }
+  }      
   /* USER CODE END OnJoinRequest_1 */
 }
 

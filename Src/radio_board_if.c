@@ -77,7 +77,7 @@ int32_t RBI_Init(void)
   int32_t retcode = 0;
   /* USER CODE BEGIN RBI_Init_2 */
   GPIO_InitTypeDef  gpio_init_structure = {0};
-  RF_SW_CTRL1_GPIO_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /* Configure the Radio Switch pin */
   gpio_init_structure.Pin   = RF_SW_CTRL1_Pin;
@@ -118,7 +118,7 @@ int32_t RBI_DeInit(void)
   /* 2/ Or implement RBI_DeInit here */
   int32_t retcode = 0;
   /* USER CODE BEGIN RBI_DeInit_2 */
-  RF_SW_CTRL3_GPIO_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /* Turn off switch */
   HAL_GPIO_WritePin(RF_SW_CTRL1_GPIO_Port, RF_SW_CTRL1_Pin, GPIO_PIN_RESET);
