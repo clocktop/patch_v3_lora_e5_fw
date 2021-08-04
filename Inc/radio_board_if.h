@@ -199,7 +199,13 @@ int32_t RBI_IsTCXO(void);
 int32_t RBI_IsDCDC(void);
 
 /* USER CODE BEGIN EFP */
+int32_t RBI_GetWakeUpTime(void);
 
+/**
+  * @brief  Get If TCXO is to be present on board
+  * @note   never remove called by MW,
+  * @retval return 1 if present, 0 if not present
+  */
 /* USER CODE END EFP */
 
 #ifdef __cplusplus
