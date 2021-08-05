@@ -5,6 +5,8 @@
         "platform.h": "c",
         "gpio.h": "c",
         "user_diskio_spi.h": "c",
-        "stm32wlxx_hal.h": "c"
+        "stm32wlxx_hal.h": "c",
+        "app_fatfs.h": "c",
+        "sys_app.h": "c"
     }
 }

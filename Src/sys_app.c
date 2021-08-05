@@ -93,7 +93,7 @@ static void Gpio_PreInit(void);
 void SystemApp_Init(void)
 {
   /* USER CODE BEGIN SystemApp_Init_1 */
-  Gpio_PreInit();
+  //Gpio_PreInit();
   /* USER CODE END SystemApp_Init_1 */
 
   /* Ensure that MSI is wake-up system clock */
@@ -134,7 +134,7 @@ void SystemApp_Init(void)
 #endif /* LOW_POWER_DISABLE */
 
   /* USER CODE BEGIN SystemApp_Init_2 */
-
+  SDTest();
   /* USER CODE END SystemApp_Init_2 */
 }
 
