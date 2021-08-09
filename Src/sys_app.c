@@ -33,7 +33,8 @@
 #include "sys_sensors.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "main.h"
+#include "spi.h"
 /* USER CODE END Includes */
 
 /* External variables ---------------------------------------------------------*/
@@ -135,6 +136,7 @@ void SystemApp_Init(void)
 
   /* USER CODE BEGIN SystemApp_Init_2 */
   SDTest();
+  //HAL_SPI_DeInit(&hspi2);
   /* USER CODE END SystemApp_Init_2 */
 }
 

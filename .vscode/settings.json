@@ -7,6 +7,9 @@
         "user_diskio_spi.h": "c",
         "stm32wlxx_hal.h": "c",
         "app_fatfs.h": "c",
-        "sys_app.h": "c"
+        "sys_app.h": "c",
+        "app_lorawan.h": "c",
+        "dma.h": "c",
+        "spi.h": "c"
     }
 }

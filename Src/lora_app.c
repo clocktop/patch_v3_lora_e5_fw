@@ -332,12 +332,12 @@ static void OnRxData(LmHandlerAppData_t *appData, LmHandlerRxParams_t *params)
           AppLedStateOn = appData->Buffer[0] & 0x01;
           if (AppLedStateOn == RESET)
           {
-            APP_LOG(TS_OFF, VLEVEL_H,   "LED OFF\r\n");
+            APP_LOG(TS_OFF, VLEVEL_L,   "LED OFF\r\n");
             // use this to swtich led
           }
            else
           {
-            APP_LOG(TS_OFF, VLEVEL_H, "LED ON\r\n")
+            APP_LOG(TS_OFF, VLEVEL_L, "LED ON\r\n")
             //toggle off led
           }
         }
