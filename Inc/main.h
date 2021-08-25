@@ -68,11 +68,15 @@ void SDTest(void);
 #define AFE_CH1_GPIO_Port GPIOB
 #define SD_CS_Pin GPIO_PIN_9
 #define SD_CS_GPIO_Port GPIOB
-#define LED2_Pin GPIO_PIN_5
-#define LED2_GPIO_Port GPIOB
 #define BTN_Pin GPIO_PIN_0
 #define BTN_GPIO_Port GPIOA
 #define BTN_EXTI_IRQn EXTI0_IRQn
+#define LED_R_Pin GPIO_PIN_3
+#define LED_R_GPIO_Port GPIOA
+#define LED_G_Pin GPIO_PIN_2
+#define LED_G_GPIO_Port GPIOA
+#define LED_B_Pin GPIO_PIN_10
+#define LED_B_GPIO_Port GPIOB
 #define RF_SW_CTRL1_Pin GPIO_PIN_4
 #define RF_SW_CTRL1_GPIO_Port GPIOA
 #define RF_SW_CTRL2_Pin GPIO_PIN_5
