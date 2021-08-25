@@ -435,7 +435,7 @@ static void OnTxTimerEvent(void *context)
 /* USER CODE BEGIN PrFD_LedEvents */
 static void OnTxTimerLedEvent(void *context)
 {
-  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_SET);
 }
 
 static void OnRxTimerLedEvent(void *context)
@@ -445,7 +445,7 @@ static void OnRxTimerLedEvent(void *context)
 
 static void OnJoinTimerLedEvent(void *context)
 {
-  HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
+  HAL_GPIO_TogglePin(LED_B_GPIO_Port, LED_B_Pin);
 }
 /* USER CODE END PrFD_LedEvents */
 
@@ -454,7 +454,7 @@ static void OnTxData(LmHandlerTxParams_t *params)
   /* USER CODE BEGIN OnTxData_1 */
   if ((params != NULL) && (params->IsMcpsConfirm != 0))
   {
-    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
     UTIL_TIMER_Start(&TxLedTimer);
 
     APP_LOG(TS_OFF, VLEVEL_M, "\r\n###### ========== MCPS-Confirm =============\r\n");
@@ -483,7 +483,7 @@ static void OnJoinRequest(LmHandlerJoinParams_t *joinParams)
     {
       UTIL_TIMER_Stop(&JoinLedTimer);
 
-      HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
 
       APP_LOG(TS_OFF, VLEVEL_M, "\r\n###### = JOINED = ");
       if (joinParams->Mode == ACTIVATION_TYPE_ABP)

@@ -92,13 +92,16 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_SPI2_Init();
-  MX_USART1_UART_Init();
+  MX_LPUART1_UART_Init();
   MX_FATFS_Init();
   //SDTest();
   MX_LoRaWAN_Init();
   
   /* USER CODE BEGIN 2 */
   //SDTest();
+  HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, 1);
+  HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, 1);
+  HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */

@@ -10,6 +10,7 @@
         "sys_app.h": "c",
         "app_lorawan.h": "c",
         "dma.h": "c",
-        "spi.h": "c"
+        "spi.h": "c",
+        "usart.h": "c"
     }
 }
