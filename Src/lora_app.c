@@ -333,11 +333,13 @@ static void OnRxData(LmHandlerAppData_t *appData, LmHandlerRxParams_t *params)
           if (AppLedStateOn == RESET)
           {
             APP_LOG(TS_OFF, VLEVEL_L,   "LED OFF\r\n");
+            HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin,1);
             // use this to swtich led
           }
            else
           {
-            APP_LOG(TS_OFF, VLEVEL_L, "LED ON\r\n")
+            APP_LOG(TS_OFF, VLEVEL_L, "LED ON\r\n");
+            HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin,0);
             //toggle off led
           }
         }
