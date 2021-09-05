@@ -329,6 +329,7 @@ static void OnRxData(LmHandlerAppData_t *appData, LmHandlerRxParams_t *params)
       case LORAWAN_USER_APP_PORT:
         if (appData->BufferSize == 1)
         {
+          /*
           AppLedStateOn = appData->Buffer[0] & 0x01;
           if (AppLedStateOn == RESET)
           {
@@ -342,6 +343,34 @@ static void OnRxData(LmHandlerAppData_t *appData, LmHandlerRxParams_t *params)
             HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin,0);
             //toggle off led
           }
+          */
+         APP_LOG(TS_OFF, VLEVEL_L, "Message %d\r\n", appData->Buffer[0]);
+         switch (appData->Buffer[0])
+         {
+         case 48:
+           APP_LOG(TS_OFF, VLEVEL_L,   "LED OFF\r\n");
+           HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin,1);
+           break;
+         
+         case 49:
+           APP_LOG(TS_OFF, VLEVEL_L,   "LED ON\r\n");
+           HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin,0);
+           break; 
+           
+         case 50:
+           APP_LOG(TS_OFF, VLEVEL_L, "Fast Mode on\r\n");
+           UTIL_TIMER_Stop(&TxTimer);
+           UTIL_TIMER_SetPeriod(&TxTimer,  3000);
+           UTIL_TIMER_Start(&TxTimer);
+           break;
+         case 51: 
+           APP_LOG(TS_OFF, VLEVEL_L, "Fast Mode off\r\n");
+           UTIL_TIMER_Stop(&TxTimer);
+           UTIL_TIMER_SetPeriod(&TxTimer,  APP_TX_DUTYCYCLE);
+           UTIL_TIMER_Start(&TxTimer);
+         default:
+           break;
+         }
         }
           break;
         default:
