@@ -2928,7 +2928,8 @@ static LoRaMacStatus_t SetTxContinuousWave( uint16_t timeout )
 
     continuousWave.Channel = MacCtx.Channel;
     continuousWave.Datarate = Nvm.MacGroup1.ChannelsDatarate;
-    continuousWave.TxPower = Nvm.MacGroup1.ChannelsTxPower;
+    //continuousWave.TxPower = Nvm.MacGroup1.ChannelsTxPower;
+    continuousWave.TxPower = TX_POWER_12;
     continuousWave.MaxEirp = Nvm.MacGroup2.MacParams.MaxEirp;
     continuousWave.AntennaGain = Nvm.MacGroup2.MacParams.AntennaGain;
     continuousWave.Timeout = timeout;
@@ -3252,6 +3253,7 @@ LoRaMacStatus_t LoRaMacInitialization( LoRaMacPrimitives_t* primitives, LoRaMacC
     getPhy.Attribute = PHY_DEF_TX_POWER;
     phyParam = RegionGetPhyParam( Nvm.MacGroup2.Region, &getPhy );
     Nvm.MacGroup2.ChannelsTxPowerDefault = phyParam.Value;
+    Nvm.MacGroup2.ChannelsTxPowerDefault = TX_POWER_12;
 
     getPhy.Attribute = PHY_DEF_TX_DR;
     phyParam = RegionGetPhyParam( Nvm.MacGroup2.Region, &getPhy );
@@ -4622,6 +4624,7 @@ LoRaMacStatus_t LoRaMacMlmeRequest( MlmeReq_t* mlmeRequest )
             Nvm.MacGroup1.ChannelsDatarate = RegionAlternateDr( Nvm.MacGroup2.Region, mlmeRequest->Req.Join.Datarate, ALTERNATE_DR );
 
             queueElement.Status = LORAMAC_EVENT_INFO_STATUS_JOIN_FAIL;
+            Nvm.MacGroup2.ChannelsTxPowerDefault = TX_POWER_12;
 
             status = SendReJoinReq( JOIN_REQ );
 

@@ -275,6 +275,11 @@ void LoRaWAN_Init(void)
 
   /* USER CODE BEGIN LoRaWAN_Init_2 */
   UTIL_TIMER_Start(&JoinLedTimer);
+  if (LmHandlerSetTxPower(TX_POWER_9) == LORAMAC_HANDLER_ERROR)
+  {
+	APP_LOG(TS_OFF, VLEVEL_M, "\r\n###### ========== Didn't set tx power ==========\r\n");
+  }
+  APP_LOG(TS_OFF, VLEVEL_L, "Starting connection \r\n");
   /* USER CODE END LoRaWAN_Init_2 */
 
   LmHandlerJoin(ActivationType);

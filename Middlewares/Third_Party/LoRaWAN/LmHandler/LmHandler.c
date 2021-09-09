@@ -493,6 +493,7 @@ void LmHandlerJoin( ActivationType_t mode )
 
         mlmeReq.Type = MLME_JOIN;
         mlmeReq.Req.Join.Datarate = LmHandlerParams.TxDatarate;
+        mlmeReq.Req.TxCw.Power = TX_POWER_12;
 
         // Starts the OTAA join procedure
         LoRaMacMlmeRequest( &mlmeReq );
