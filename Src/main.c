@@ -29,6 +29,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "sys_app.h"
+#include "datalog.h"
+#include "lora_app.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -91,7 +93,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_SPI2_Init();
+  
   MX_LPUART1_UART_Init();
   MX_FATFS_Init();
   //SDTest();
@@ -99,9 +101,15 @@ int main(void)
   
   /* USER CODE BEGIN 2 */
   //SDTest();
+  //MX_SPI2_Init();
+  MX_ADC_Init();
+  MX_TIM2_Init();
+  //MX_FATFS_Init();
+  //DATALOG_SD_Init();
   HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, 1);
   HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, 1);
   HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, 1);
+  HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -165,6 +173,15 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
+{
+  ADCHalfCycle(hadc);
+}
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+  ADCCpltCycle(hadc);
+}
 void SDTest(void)
 {
   APP_LOG(TS_OFF, VLEVEL_L, "SD card Demo\r\n");

@@ -29,7 +29,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "datalog.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -50,7 +50,7 @@ extern "C" {
 /*!
  * Defines the application data transmission duty cycle. 10s, value in [ms].
  */
-#define APP_TX_DUTYCYCLE                            30000
+#define APP_TX_DUTYCYCLE                            10000
 
 /*!
  * LoRaWAN User application port
@@ -105,7 +105,7 @@ extern "C" {
 #define LORAWAN_DEFAULT_PING_SLOT_PERIODICITY       4
 
 /* USER CODE BEGIN EC */
-
+extern uint16_t AudioInBuff0[AUDIO_IN_BUFFER_SIZE];
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
@@ -120,7 +120,8 @@ extern "C" {
 void LoRaWAN_Init(void);
 
 /* USER CODE BEGIN EFP */
-
+void ADCHalfCycle(ADC_HandleTypeDef* hadc);
+void ADCCpltCycle(ADC_HandleTypeDef* hadc);
 /* USER CODE END EFP */
 
 #ifdef __cplusplus

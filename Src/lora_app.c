@@ -39,12 +39,16 @@
 #include "sys_sensors.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "datalog.h"
+#include "app_fatfs.h"
+#include "stm32_lpm.h"
 /* USER CODE END Includes */
 
 /* External variables ---------------------------------------------------------*/
 /* USER CODE BEGIN EV */
-
+extern uint16_t sdcard_file_counter;
+extern ADC_HandleTypeDef ADC_HANDLE;
+extern TIM_HandleTypeDef ADC_TIM_HANDLE;
 /* USER CODE END EV */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -137,6 +141,11 @@ static void OnRxTimerLedEvent(void *context);
   * @retval none
   */
 static void OnJoinTimerLedEvent(void *context);
+
+void MicProcess(void);
+void EnableSDLog(void);
+void DisableSDLog(void);
+void WriteSD(void);
 /* USER CODE END PFP */
 
 /* Private variables ---------------------------------------------------------*/
@@ -206,6 +215,17 @@ static LmHandlerAppData_t AppData = { 0, 0, AppDataBuffer };
   * @brief Specifies the state of the application LED
   */
 static uint8_t AppLedStateOn = RESET;
+
+volatile  int  index_buff=0;
+volatile uint8_t write_flag=0;
+volatile uint32_t MsInBuff=0;
+
+uint16_t Audio_OUT_Buff[SIZE_BUFF];
+volatile uint16_t cont=0;
+uint16_t PCM_Buffer[AUDIO_CHANNELS * AUDIO_SAMPLING_FREQUENCY / 1000];
+
+uint16_t AudioInBuff0[AUDIO_IN_BUFFER_SIZE] = {0};
+uint16_t counter =0;
 /* USER CODE END PV */
 
 /* Exported functions ---------------------------------------------------------*/
@@ -240,6 +260,7 @@ void LoRaWAN_Init(void)
   UTIL_TIMER_SetPeriod(&TxLedTimer, 50);
   UTIL_TIMER_SetPeriod(&RxLedTimer, 100);
   UTIL_TIMER_SetPeriod(&JoinLedTimer, 200);
+  
   /* USER CODE END LoRaWAN_Init_1 */
 
   UTIL_SEQ_RegTask((1 << CFG_SEQ_Task_LmHandlerProcess), UTIL_SEQ_RFU, LmHandlerProcess);
@@ -272,7 +293,10 @@ void LoRaWAN_Init(void)
   }
 
   /* USER CODE BEGIN LoRaWAN_Init_Last */
-
+  APP_LOG(TS_OFF, VLEVEL_M, "got here");
+  UTIL_SEQ_RegTask( 1 << CFG_EnableSDLog, UTIL_SEQ_RFU, EnableSDLog);
+  UTIL_SEQ_RegTask( 1 << CFG_DisableSDLog, UTIL_SEQ_RFU, DisableSDLog);
+  UTIL_SEQ_RegTask( 1 << CFG_WriteSD, UTIL_SEQ_RFU, WriteSD);
   /* USER CODE END LoRaWAN_Init_Last */
 }
 
@@ -282,7 +306,147 @@ void LoRaWAN_Init(void)
 
 /* Private functions ---------------------------------------------------------*/
 /* USER CODE BEGIN PrFD */
+void EnableSDLog(void)
+{
+  // first turn off the pull downs on the spi bus
+  if(SD_Log_Enabled == 0)
+  {
+    // Do not allow low power mode while logging
+    APP_LOG(TS_OFF, VLEVEL_L, "LPM CONFIG\r\n");
+    UTIL_LPM_SetOffMode(1 << CFG_LPM_SDLOG, UTIL_LPM_DISABLE);
+    UTIL_LPM_SetStopMode(1 << CFG_LPM_SDLOG, UTIL_LPM_DISABLE);
+    //DeConfigureSDPullDown();
 
+    // Set up FatFS SD Card
+    //MX_FATFS_Init();
+    //DATALOG_SD_Init();
+    
+    if(DATALOG_SD_Log_Enable())
+    {
+      SD_Log_Enabled = 1; // tells the callback to do the logging
+    }
+    else
+    {
+      HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, 0);
+      HAL_Delay(500);
+      HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, 1);
+      HAL_Delay(500);
+      HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, 0);
+      HAL_Delay(500);
+      HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, 1);
+      DATALOG_SD_Log_Disable();
+      DATALOG_SD_DeInit();
+      return;
+    }
+    APP_LOG(TS_OFF, VLEVEL_L, "LOG EN\r\n");
+
+    // Start ADC and Timer
+    //HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
+    MX_ADC_Init();
+    MX_TIM2_Init();
+  
+    HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
+    HAL_TIM_Base_Start(&ADC_TIM_HANDLE);
+    APP_LOG(TS_OFF, VLEVEL_L, "adc start \r\n");
+  }
+  //UTIL_SEQ_SetTask( 1<<CFG_TASK_SW1_BUTTON_PUSHED_ID, CFG_SCH_PRIO_0);
+  return;
+}
+
+void DisableSDLog(void)
+{
+  if(SD_Log_Enabled == 1)
+  {
+    // Stop ADC and Timer
+    //HAL_ADC_Stop_DMA(&ADC_HANDLE);
+    HAL_TIM_Base_Stop(&ADC_TIM_HANDLE);
+
+    // Clear MsInBuff  and SD_Log_Enabled
+    MsInBuff = 0;
+    SD_Log_Enabled = 0;
+
+    // Close off the SD log file 
+    DATALOG_SD_Log_Disable();
+
+    // Unmount SD Card and unlink driver
+    //DATALOG_SD_DeInit();
+
+    // Set pull downs
+    //ConfigureSDPullDown();
+
+    // Allow low power mode
+    UTIL_LPM_SetOffMode(1 << CFG_LPM_SDLOG, UTIL_LPM_ENABLE);
+    UTIL_LPM_SetStopMode(1 << CFG_LPM_SDLOG, UTIL_LPM_ENABLE);
+
+    HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, 1);
+  }
+  return;
+}
+
+void WriteSD(void)
+{
+  if(MsInBuff > 0)
+  	{
+  		write_ms_on_sd();
+  		__disable_irq();
+  		MsInBuff--;
+  		__enable_irq();
+  	}
+}
+
+void MicProcess(void)
+{
+	uint16_t index = 0;
+	static uint16_t OUT_Buff_lvl = 0;
+
+	if (SD_Log_Enabled)
+	{
+		for (index = 0; index < PCM_SAMPLES_X_MS ; index++)
+		{
+			Audio_OUT_Buff[OUT_Buff_lvl] = PCM_Buffer[index];
+			OUT_Buff_lvl = (OUT_Buff_lvl + 1)%SIZE_BUFF;
+		}
+		MsInBuff++;
+    UTIL_SEQ_SetTask(1 << CFG_WriteSD, CFG_SEQ_Prio_0);
+		//HAL_GPIO_TogglePin(Mon_GPIO_Port, Mon_Pin);
+  }
+}
+
+void ADCHalfCycle(ADC_HandleTypeDef* hadc)
+{
+	uint32_t i, j = 0;
+	//HAL_GPIO_WritePin(Mon_GPIO_Port, Mon_Pin, 1);
+  //APP_LOG(TS_OFF, VLEVEL_L, "H\r\n");
+	for(i=0; i < AUDIO_IN_BUFFER_SIZE/2; i+=2)
+	{
+    /*
+		PCM_Buffer[j++] = AudioInBuff0[i];
+		PCM_Buffer[j++] = AudioInBuff0[i+1];
+    */
+    PCM_Buffer[j++] = counter;
+    PCM_Buffer[j++] = counter++;
+	}
+	MicProcess();
+	//HAL_GPIO_WritePin(Mon_GPIO_Port, Mon_Pin, 0);
+}
+
+void ADCCpltCycle(ADC_HandleTypeDef* hadc)
+{
+	uint32_t i, j=0;
+
+	//HAL_GPIO_WritePin(Mon_GPIO_Port, Mon_Pin, 1);
+	for(i = AUDIO_IN_BUFFER_SIZE/2; i< AUDIO_IN_BUFFER_SIZE; i+=2)
+	{
+    /*
+		PCM_Buffer[j++] = AudioInBuff0[i];
+		PCM_Buffer[j++] = AudioInBuff0[i+1];
+    */
+    PCM_Buffer[j++] = counter;
+    PCM_Buffer[j++] = counter++;
+	}
+	MicProcess();
+	//HAL_GPIO_WritePin(Mon_GPIO_Port, Mon_Pin, 0);
+}
 /* USER CODE END PrFD */
 
 static void OnRxData(LmHandlerAppData_t *appData, LmHandlerRxParams_t *params)
@@ -348,12 +512,14 @@ static void OnRxData(LmHandlerAppData_t *appData, LmHandlerRxParams_t *params)
          switch (appData->Buffer[0])
          {
          case 48:
-           APP_LOG(TS_OFF, VLEVEL_L,   "LED OFF\r\n");
+           APP_LOG(TS_OFF, VLEVEL_L,   "LED OFF Log End\r\n");
+           UTIL_SEQ_SetTask(1 << CFG_DisableSDLog, CFG_SEQ_PRIO_1);
            HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin,1);
            break;
          
          case 49:
-           APP_LOG(TS_OFF, VLEVEL_L,   "LED ON\r\n");
+           APP_LOG(TS_OFF, VLEVEL_L,   "LED ON Log Start\r\n");
+           UTIL_SEQ_SetTask(1 << CFG_EnableSDLog, CFG_SEQ_PRIO_1);
            HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin,0);
            break; 
            
@@ -395,7 +561,7 @@ static void SendTxData(void)
   uint16_t altitudeGps = 0;
 
   EnvSensors_Read(&sensor_data);
-  temperature = (SYS_GetTemperatureLevel() >> 8);
+  //temperature = (SYS_GetTemperatureLevel() >> 8);
   pressure    = (uint16_t)(sensor_data.pressure * 100 / 10);      /* in hPa / 10 */
 
   AppData.Port = LORAWAN_USER_APP_PORT;

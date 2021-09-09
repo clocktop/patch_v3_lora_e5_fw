@@ -135,7 +135,8 @@ void SystemApp_Init(void)
 #endif /* LOW_POWER_DISABLE */
 
   /* USER CODE BEGIN SystemApp_Init_2 */
-  SDTest();
+  //SDTest();
+  //SDTest();
   //HAL_SPI_DeInit(&hspi2);
   /* USER CODE END SystemApp_Init_2 */
 }

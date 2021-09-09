@@ -48,7 +48,7 @@ typedef enum
   CFG_LPM_APPLI_Id,
   CFG_LPM_UART_TX_Id,
   /* USER CODE BEGIN CFG_LPM_Id_t */
-
+  CFG_LPM_SDLOG,
   /* USER CODE END CFG_LPM_Id_t */
 } CFG_LPM_Id_t;
 
@@ -64,7 +64,7 @@ typedef enum
 {
   CFG_SEQ_Prio_0,
   /* USER CODE BEGIN CFG_SEQ_Prio_Id_t */
-
+  CFG_SEQ_PRIO_1,
   /* USER CODE END CFG_SEQ_Prio_Id_t */
   CFG_SEQ_Prio_NBR,
 } CFG_SEQ_Prio_Id_t;
@@ -78,7 +78,9 @@ typedef enum
   CFG_SEQ_Task_LmHandlerProcess,
   CFG_SEQ_Task_LoRaSendOnTxTimerOrButtonEvent,
   /* USER CODE BEGIN CFG_SEQ_Task_Id_t */
-
+  CFG_EnableSDLog,
+  CFG_DisableSDLog,
+  CFG_WriteSD,
   /* USER CODE END CFG_SEQ_Task_Id_t */
   CFG_SEQ_Task_NBR
 } CFG_SEQ_Task_Id_t;

@@ -11,6 +11,7 @@
         "app_lorawan.h": "c",
         "dma.h": "c",
         "spi.h": "c",
-        "usart.h": "c"
+        "usart.h": "c",
+        "datalog.h": "c"
     }
 }

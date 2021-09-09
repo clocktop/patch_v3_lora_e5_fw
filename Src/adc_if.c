@@ -189,7 +189,7 @@ static uint32_t ADC_ReadChannels(uint32_t channel)
   uint32_t ADCxConvertedValues = 0;
   ADC_ChannelConfTypeDef sConfig = {0};
 
-  MX_ADC_Init();
+  MX_ADC_Init_pre();
 
   /* Start Calibration */
   if (HAL_ADCEx_Calibration_Start(&hadc) != HAL_OK)

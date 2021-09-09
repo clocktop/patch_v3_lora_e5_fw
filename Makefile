@@ -60,6 +60,7 @@ Src/usart.c \
 Src/stm32wlxx_it.c \
 Src/stm32wlxx_hal_msp.c \
 Src/user_diskio_spi.c \
+Src/datalog.c \
 Drivers/STM32WLxx_HAL_Driver/Src/stm32wlxx_hal_adc.c \
 Drivers/STM32WLxx_HAL_Driver/Src/stm32wlxx_hal_adc_ex.c \
 Drivers/STM32WLxx_HAL_Driver/Src/stm32wlxx_ll_adc.c \
