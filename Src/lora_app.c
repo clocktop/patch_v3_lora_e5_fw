@@ -226,6 +226,8 @@ uint16_t PCM_Buffer[AUDIO_CHANNELS * AUDIO_SAMPLING_FREQUENCY / 1000];
 
 uint16_t AudioInBuff0[AUDIO_IN_BUFFER_SIZE] = {0};
 uint16_t counter =0;
+
+uint8_t setup_first =0;
 /* USER CODE END PV */
 
 /* Exported functions ---------------------------------------------------------*/
@@ -325,6 +327,7 @@ void EnableSDLog(void)
     // Set up FatFS SD Card
     //MX_FATFS_Init();
     //DATALOG_SD_Init();
+    MX_TIM2_Init();
     
     if(DATALOG_SD_Log_Enable())
     {
@@ -348,7 +351,7 @@ void EnableSDLog(void)
     // Start ADC and Timer
     //HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
     MX_ADC_Init();
-    MX_TIM2_Init();
+
   
     HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
     HAL_TIM_Base_Start(&ADC_TIM_HANDLE);
@@ -363,22 +366,25 @@ void DisableSDLog(void)
   if(SD_Log_Enabled == 1)
   {
     // Stop ADC and Timer
-    //HAL_ADC_Stop_DMA(&ADC_HANDLE);
+    HAL_ADC_Stop_DMA(&ADC_HANDLE);
     HAL_TIM_Base_Stop(&ADC_TIM_HANDLE);
 
     // Clear MsInBuff  and SD_Log_Enabled
+    APP_LOG(TS_OFF, VLEVEL_L, "MS leftover: %d \r\n", MsInBuff);
     MsInBuff = 0;
     SD_Log_Enabled = 0;
 
     // Close off the SD log file 
     DATALOG_SD_Log_Disable();
+    f_mount(NULL, "", 0);
 
     // Unmount SD Card and unlink driver
     //DATALOG_SD_DeInit();
 
     // Set pull downs
     //ConfigureSDPullDown();
-
+    
+    //HAL_ADC_MspDeInit(&ADC_HANDLE);
     // Allow low power mode
     UTIL_LPM_SetOffMode(1 << CFG_LPM_SDLOG, UTIL_LPM_ENABLE);
     UTIL_LPM_SetStopMode(1 << CFG_LPM_SDLOG, UTIL_LPM_ENABLE);
@@ -390,12 +396,15 @@ void DisableSDLog(void)
 
 void WriteSD(void)
 {
-  if(MsInBuff > 0)
+  
+  while(MsInBuff > 0)
   	{
-  		write_ms_on_sd();
+  		HAL_GPIO_WritePin(GPIO2_GPIO_Port,GPIO2_Pin, 1);
+      write_ms_on_sd();
   		__disable_irq();
   		MsInBuff--;
   		__enable_irq();
+      HAL_GPIO_WritePin(GPIO2_GPIO_Port,GPIO2_Pin, 0);
   	}
 }
 
@@ -411,8 +420,11 @@ void MicProcess(void)
 			Audio_OUT_Buff[OUT_Buff_lvl] = PCM_Buffer[index];
 			OUT_Buff_lvl = (OUT_Buff_lvl + 1)%SIZE_BUFF;
 		}
+    
 		MsInBuff++;
-    UTIL_SEQ_SetTask(1 << CFG_WriteSD, CFG_SEQ_Prio_0);
+    UTIL_SEQ_SetTask(1 << CFG_WriteSD, CFG_SEQ_PRIO_1);
+    
+    //APP_LOG(TS_OFF, VLEVEL_L, "%d,%d,%d,%d,%d,%d,%d,%d,",PCM_Buffer[0],PCM_Buffer[1],PCM_Buffer[2],PCM_Buffer[3],PCM_Buffer[4],PCM_Buffer[5],PCM_Buffer[6],PCM_Buffer[7])
 		//HAL_GPIO_TogglePin(Mon_GPIO_Port, Mon_Pin);
   }
 }

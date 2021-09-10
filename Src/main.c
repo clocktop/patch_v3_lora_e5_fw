@@ -96,7 +96,7 @@ int main(void)
   HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, 1);
   HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, 1);
   HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, 1);
-  
+
   MX_LPUART1_UART_Init();
   MX_FATFS_Init();
   //SDTest();

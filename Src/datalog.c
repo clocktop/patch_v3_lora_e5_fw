@@ -39,7 +39,7 @@ static uint32_t WavProcess_HeaderInit(void)
 {
   uint16_t   BitPerSample=16;
   uint16_t   NbrChannels=AUDIO_CHANNELS;
-  uint32_t   ByteRate=AUDIO_SAMPLING_FREQUENCY*(BitPerSample/8);
+  uint32_t   ByteRate=AUDIO_SAMPLING_FREQUENCY*NbrChannels*(BitPerSample/8);
 
   uint32_t   SampleRate=AUDIO_SAMPLING_FREQUENCY;
   uint16_t   BlockAlign= NbrChannels * (BitPerSample/8);
@@ -159,8 +159,8 @@ void write_ms_on_sd(void)
   volatile FRESULT s;
   uint32_t byteswritten; /* File write/read counts */
 
-  s=f_write(&MyFile,  &(((int16_t *)Audio_OUT_Buff)[Audio_OUT_Buff_Index_out]), PCM_BYTES_X_MS, (void *)&byteswritten);
-  Audio_OUT_Buff_Index_out = (Audio_OUT_Buff_Index_out+PCM_BYTES_X_MS)%(SIZE_BUFF);
+  s=f_write(&MyFile,  &(((uint8_t *)Audio_OUT_Buff)[Audio_OUT_Buff_Index_out]), PCM_BYTES_X_MS, (void *)&byteswritten);
+  Audio_OUT_Buff_Index_out = (Audio_OUT_Buff_Index_out+PCM_BYTES_X_MS)%(SIZE_BUFF*2);
 
   if(s != FR_OK)
   {
