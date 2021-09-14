@@ -185,6 +185,10 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
   ADCCpltCycle(hadc);
 }
+void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
+{
+  APP_LOG(TS_OFF, VLEVEL_L, "ADC ERROR");
+}
 void SDTest(void)
 {
   APP_LOG(TS_OFF, VLEVEL_L, "SD card Demo\r\n");

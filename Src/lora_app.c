@@ -42,6 +42,7 @@
 #include "datalog.h"
 #include "app_fatfs.h"
 #include "stm32_lpm.h"
+#include "dma.h"
 /* USER CODE END Includes */
 
 /* External variables ---------------------------------------------------------*/
@@ -316,6 +317,7 @@ void LoRaWAN_Init(void)
 void EnableSDLog(void)
 {
   // first turn off the pull downs on the spi bus
+  HAL_StatusTypeDef res = HAL_OK;
   if(SD_Log_Enabled == 0)
   {
     // Do not allow low power mode while logging
@@ -327,7 +329,9 @@ void EnableSDLog(void)
     // Set up FatFS SD Card
     //MX_FATFS_Init();
     //DATALOG_SD_Init();
+    MX_DMA_Init();
     MX_TIM2_Init();
+    res = HAL_TIM_Base_Start(&ADC_TIM_HANDLE);
     
     if(DATALOG_SD_Log_Enable())
     {
@@ -349,30 +353,51 @@ void EnableSDLog(void)
     APP_LOG(TS_OFF, VLEVEL_L, "LOG EN\r\n");
 
     // Start ADC and Timer
-    //HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
-    MX_ADC_Init();
+    
+      MX_ADC_Init();
+      HAL_Delay(10);
+      HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
+      setup_first = 1;
+    uint32_t reg;
+    reg = hadc.Instance->ISR;
+    APP_LOG(TS_OFF, VLEVEL_L, "ISR REG: %x \r\n", reg);
+    reg = hadc.Instance->CR;
+    APP_LOG(TS_OFF, VLEVEL_L, "CR REG: %x \r\n", reg);
+    reg = htim2.Instance->CCR1;
+    APP_LOG(TS_OFF, VLEVEL_L, "TIM CR1 REG: %x \r\n", reg);
+    reg = htim2.Instance->CCR2;
+    APP_LOG(TS_OFF, VLEVEL_L, "TIM CR2 REG: %x \r\n", reg);
 
   
-    HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
-    HAL_TIM_Base_Start(&ADC_TIM_HANDLE);
-    APP_LOG(TS_OFF, VLEVEL_L, "adc start \r\n");
+    //res = HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
+    //APP_LOG(TS_OFF, VLEVEL_L, "dma start, time res = %d \r\n", res);
+    
+    //TIM2->CR1|=(TIM_CR1_CEN);
+
+    APP_LOG(TS_OFF, VLEVEL_L, "tim start, time res = %d \r\n", res);
   }
   //UTIL_SEQ_SetTask( 1<<CFG_TASK_SW1_BUTTON_PUSHED_ID, CFG_SCH_PRIO_0);
   return;
 }
 
 void DisableSDLog(void)
-{
+{ 
+  uint32_t tim_val =0;
   if(SD_Log_Enabled == 1)
   {
     // Stop ADC and Timer
-    HAL_ADC_Stop_DMA(&ADC_HANDLE);
+    //HAL_ADC_Stop_DMA(&ADC_HANDLE);
     HAL_TIM_Base_Stop(&ADC_TIM_HANDLE);
-
+    //TIM2->CR1 &= ~(TIM_CR1_CEN);
+    //MX_TIM2_Init();
     // Clear MsInBuff  and SD_Log_Enabled
     APP_LOG(TS_OFF, VLEVEL_L, "MS leftover: %d \r\n", MsInBuff);
     MsInBuff = 0;
     SD_Log_Enabled = 0;
+    tim_val = __HAL_TIM_GET_COUNTER(&ADC_TIM_HANDLE);
+    APP_LOG(TS_OFF, VLEVEL_L, "TIM VAL: %d \r\n",tim_val);
+    
+    
 
     // Close off the SD log file 
     DATALOG_SD_Log_Disable();
@@ -390,6 +415,15 @@ void DisableSDLog(void)
     UTIL_LPM_SetStopMode(1 << CFG_LPM_SDLOG, UTIL_LPM_ENABLE);
 
     HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, 1);
+    uint32_t reg;
+    reg = hadc.Instance->ISR;
+    APP_LOG(TS_OFF, VLEVEL_L, "ISR REG: %x \r\n", reg);
+    reg = hadc.Instance->CR;
+    APP_LOG(TS_OFF, VLEVEL_L, "CR REG: %x \r\n", reg);
+    reg = ADC_TIM_HANDLE.Instance->CCR1;
+    APP_LOG(TS_OFF, VLEVEL_L, "TIM CR1 REG: %x \r\n", reg);
+    reg = ADC_TIM_HANDLE.Instance->CCR2;
+    APP_LOG(TS_OFF, VLEVEL_L, "TIM CR2 REG: %x \r\n", reg);
   }
   return;
 }
@@ -451,7 +485,9 @@ void ADCCpltCycle(ADC_HandleTypeDef* hadc)
 {
 	uint32_t i, j=0;
 
-	//HAL_GPIO_WritePin(Mon_GPIO_Port, Mon_Pin, 1);
+	HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, 0);
+  UTIL_TIMER_Start(&TxLedTimer);
+
 	for(i = AUDIO_IN_BUFFER_SIZE/2; i< AUDIO_IN_BUFFER_SIZE; i+=2)
 	{
     /*
@@ -666,6 +702,7 @@ static void OnJoinTimerLedEvent(void *context)
 static void OnTxData(LmHandlerTxParams_t *params)
 {
   /* USER CODE BEGIN OnTxData_1 */
+  uint32_t tim_val = 0;
   if ((params != NULL) && (params->IsMcpsConfirm != 0))
   {
     HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
@@ -674,7 +711,8 @@ static void OnTxData(LmHandlerTxParams_t *params)
     APP_LOG(TS_OFF, VLEVEL_M, "\r\n###### ========== MCPS-Confirm =============\r\n");
     APP_LOG(TS_OFF, VLEVEL_H, "###### U/L FRAME:%04d | PORT:%d | DR:%d | PWR:%d", params->UplinkCounter,
             params->AppData.Port, params->Datarate, params->TxPower);
-
+    tim_val = __HAL_TIM_GET_COUNTER(&ADC_TIM_HANDLE);
+    APP_LOG(TS_OFF, VLEVEL_L, "TIM VAL: %d \r\n",tim_val);
     APP_LOG(TS_OFF, VLEVEL_H, " | MSG TYPE:");
     if (params->MsgType == LORAMAC_HANDLER_CONFIRMED_MSG)
     {
@@ -707,6 +745,8 @@ static void OnJoinRequest(LmHandlerJoinParams_t *joinParams)
       else
       {
         APP_LOG(TS_OFF, VLEVEL_M, "OTAA =====================\r\n");
+        //MX_ADC_Init();
+        //HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
       }
     }
     else
