@@ -32,6 +32,7 @@ volatile uint8_t pHeader[44];
 static uint32_t WavProcess_HeaderInit(void);
 static uint32_t WavProcess_HeaderUpdate(uint32_t len);
 uint16_t sdcard_file_counter = 0;
+uint8_t mounted = 0;
 
 
 
@@ -178,7 +179,7 @@ void write_on_sd(void)
   s=f_write(&MyFile,  &(((uint8_t *)Audio_OUT_Buff)[index_buff]), SIZE_BUFF, (void *)&byteswritten);
   if(s != FR_OK)
   {
-	HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin,1);
+	HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin,0);
     while(1);
   }
 }
@@ -210,6 +211,7 @@ void DATALOG_SD_DeInit(void)
 {
   f_mount(0, "", 0); // unmounts card
   FATFS_UnLinkDriver(SDPath);
+  mounted = 0;
 }
 
 
@@ -231,19 +233,24 @@ uint8_t DATALOG_SD_Log_Enable(void)
   //SD_IO_CS_Init();
   MX_SPI2_Init();
   HAL_Delay(100);
-  //SDTest();
-  res = f_mount(&SDFatFs, "", 1); //1=mount no
-  if (res != FR_OK) {
-	  APP_LOG(TS_OFF, VLEVEL_L,"f_mount error (%i)\r\n", res);
-	  while(1);
+  SDTest();
+  mounted = 0;
+  if(mounted == 0){
+    res = f_mount(&SDFatFs, "", 1); //1=mount no
+    if (res != FR_OK) {
+	    APP_LOG(TS_OFF, VLEVEL_L,"f_mount error (%i)\r\n", res);
+	    while(1);
+    }
+    mounted = 1;
   }
+  
   APP_LOG(TS_OFF, VLEVEL_L, "File name\r\n");
   do
   {
     sprintf(file_name, "%s%.3d%s", "N", sdcard_file_counter, ".wav");
     sdcard_file_counter++;
     res = f_stat(file_name,NULL);
-    APP_LOG(TS_OFF, VLEVEL_L, "file_number %d   res %d \r\n", sdcard_file_counter, res);
+    //APP_LOG(TS_OFF, VLEVEL_L, "file_number %d   res %d \r\n", sdcard_file_counter, res);
   }
   while ( res != FR_NO_FILE);
 
@@ -291,8 +298,11 @@ void DATALOG_SD_Log_Disable(void)
   f_write(&MyFile, (uint8_t*)pHeader,  sizeof(pHeader), (void*)&byteswritten);
 
   /* Close file and unmount MyFilesystem */
-    //f_sync(&MyFile);
+  f_sync(&MyFile);
   f_close(&MyFile);
+  f_mount(NULL, "", 0);
+
+  MX_SPI2_Init();
 
 }
 

@@ -104,7 +104,7 @@ int main(void)
   
   /* USER CODE BEGIN 2 */
   //SDTest();
-  //MX_SPI2_Init();
+  MX_SPI2_Init();
   MX_ADC_Init();
   MX_TIM2_Init();
   //MX_FATFS_Init();
@@ -112,7 +112,7 @@ int main(void)
   HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, 1);
   HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, 1);
   HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, 1);
-  HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
+  //HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -279,6 +279,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
+  HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, 0);
   while (1)
   {
   }

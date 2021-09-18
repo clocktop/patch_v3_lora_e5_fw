@@ -23,11 +23,15 @@ extern uint16_t sdcard_file_counter;
 #define AUDIO_CHANNELS 2
 #define AUDIO_SAMPLING_FREQUENCY 8000
 
-#define PCM_SAMPLES_X_MS              	(AUDIO_SAMPLING_FREQUENCY/1000*AUDIO_CHANNELS)
+#define NUM_MS                          64
+#define PCM_SAMPLES_X_MS              	(AUDIO_SAMPLING_FREQUENCY/1000*AUDIO_CHANNELS)*NUM_MS
+//#define PCM_SAMPLES_X_MS                (128*2)
 #define PCM_BYTES_X_MS                	(PCM_SAMPLES_X_MS*2)
-#define SIZE_BUFF                     	(PCM_SAMPLES_X_MS*250)
+#define SIZE_BUFF                     	(PCM_SAMPLES_X_MS*5)
 
-#define AUDIO_IN_BUFFER_SIZE 			(AUDIO_SAMPLING_FREQUENCY/1000*AUDIO_CHANNELS)*2
+#define AUDIO_IN_BUFFER_SIZE 			(AUDIO_SAMPLING_FREQUENCY/1000*AUDIO_CHANNELS)*2*NUM_MS
+
+//#define AUDIO_IN_BUFFER_SIZE            (128*2)*2
 
 
 void DATALOG_SD_Init(void);

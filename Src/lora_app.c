@@ -223,12 +223,13 @@ volatile uint32_t MsInBuff=0;
 
 uint16_t Audio_OUT_Buff[SIZE_BUFF];
 volatile uint16_t cont=0;
-uint16_t PCM_Buffer[AUDIO_CHANNELS * AUDIO_SAMPLING_FREQUENCY / 1000];
+uint16_t PCM_Buffer[AUDIO_CHANNELS * AUDIO_SAMPLING_FREQUENCY / 1000 * NUM_MS];
 
 uint16_t AudioInBuff0[AUDIO_IN_BUFFER_SIZE] = {0};
 uint16_t counter =0;
 
 uint8_t setup_first =0;
+uint16_t x = 0;
 /* USER CODE END PV */
 
 /* Exported functions ---------------------------------------------------------*/
@@ -322,16 +323,14 @@ void EnableSDLog(void)
   {
     // Do not allow low power mode while logging
     APP_LOG(TS_OFF, VLEVEL_L, "LPM CONFIG\r\n");
-    UTIL_LPM_SetOffMode(1 << CFG_LPM_SDLOG, UTIL_LPM_DISABLE);
-    UTIL_LPM_SetStopMode(1 << CFG_LPM_SDLOG, UTIL_LPM_DISABLE);
+    UTIL_LPM_SetOffMode(1 << CFG_LPM_APPLI_Id, UTIL_LPM_DISABLE);
+    UTIL_LPM_SetStopMode(1 << CFG_LPM_APPLI_Id, UTIL_LPM_DISABLE);
     //DeConfigureSDPullDown();
 
     // Set up FatFS SD Card
     //MX_FATFS_Init();
     //DATALOG_SD_Init();
-    MX_DMA_Init();
-    MX_TIM2_Init();
-    res = HAL_TIM_Base_Start(&ADC_TIM_HANDLE);
+    
     
     if(DATALOG_SD_Log_Enable())
     {
@@ -353,11 +352,21 @@ void EnableSDLog(void)
     APP_LOG(TS_OFF, VLEVEL_L, "LOG EN\r\n");
 
     // Start ADC and Timer
-    
+    if(setup_first == 0)
+    {
+      MX_DMA_Init();
+      MX_TIM2_Init();
+        
       MX_ADC_Init();
       HAL_Delay(10);
-      HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
+        
+      __enable_irq();
       setup_first = 1;
+      HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
+    }
+    MsInBuff = 0;  
+    res = HAL_TIM_Base_Start(&ADC_TIM_HANDLE);
+    
     uint32_t reg;
     reg = hadc.Instance->ISR;
     APP_LOG(TS_OFF, VLEVEL_L, "ISR REG: %x \r\n", reg);
@@ -401,7 +410,7 @@ void DisableSDLog(void)
 
     // Close off the SD log file 
     DATALOG_SD_Log_Disable();
-    f_mount(NULL, "", 0);
+    //f_mount(NULL, "", 0);
 
     // Unmount SD Card and unlink driver
     //DATALOG_SD_DeInit();
@@ -411,10 +420,10 @@ void DisableSDLog(void)
     
     //HAL_ADC_MspDeInit(&ADC_HANDLE);
     // Allow low power mode
-    UTIL_LPM_SetOffMode(1 << CFG_LPM_SDLOG, UTIL_LPM_ENABLE);
-    UTIL_LPM_SetStopMode(1 << CFG_LPM_SDLOG, UTIL_LPM_ENABLE);
+    //UTIL_LPM_SetOffMode(1 << CFG_LPM_APPLI_Id, UTIL_LPM_ENABLE);
+    //UTIL_LPM_SetStopMode(1 << CFG_LPM_APPLI_Id, UTIL_LPM_ENABLE);
 
-    HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, 1);
+    //HAL_GPIO_WritePxin(LED_B_GPIO_Port, LED_B_Pin, 1);
     uint32_t reg;
     reg = hadc.Instance->ISR;
     APP_LOG(TS_OFF, VLEVEL_L, "ISR REG: %x \r\n", reg);
@@ -439,6 +448,11 @@ void WriteSD(void)
   		MsInBuff--;
   		__enable_irq();
       HAL_GPIO_WritePin(GPIO2_GPIO_Port,GPIO2_Pin, 0);
+      if(MsInBuff > 250)
+      {
+        HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, 0);
+        HAL_GPIO_WritePin(LED_G_GPIO_Port, LED_G_Pin, 1);
+      }
   	}
 }
 
@@ -457,8 +471,12 @@ void MicProcess(void)
     
 		MsInBuff++;
     UTIL_SEQ_SetTask(1 << CFG_WriteSD, CFG_SEQ_PRIO_1);
+    if(x++ == 15)
+    {
+      APP_LOG(TS_OFF, VLEVEL_L, "%d\r\n",MsInBuff);
+      x = 0;
+    }
     
-    //APP_LOG(TS_OFF, VLEVEL_L, "%d,%d,%d,%d,%d,%d,%d,%d,",PCM_Buffer[0],PCM_Buffer[1],PCM_Buffer[2],PCM_Buffer[3],PCM_Buffer[4],PCM_Buffer[5],PCM_Buffer[6],PCM_Buffer[7])
 		//HAL_GPIO_TogglePin(Mon_GPIO_Port, Mon_Pin);
   }
 }
@@ -466,18 +484,19 @@ void MicProcess(void)
 void ADCHalfCycle(ADC_HandleTypeDef* hadc)
 {
 	uint32_t i, j = 0;
-	//HAL_GPIO_WritePin(Mon_GPIO_Port, Mon_Pin, 1);
+	//HAL_GPIO_WritePin(GPIO2_GPIO_Port, GPIO2_Pin, 1);
   //APP_LOG(TS_OFF, VLEVEL_L, "H\r\n");
-	for(i=0; i < AUDIO_IN_BUFFER_SIZE/2; i+=2)
-	{
+  for(i=0; i < AUDIO_IN_BUFFER_SIZE/2; i+=2)
+  {
     /*
-		PCM_Buffer[j++] = AudioInBuff0[i];
-		PCM_Buffer[j++] = AudioInBuff0[i+1];
+  	PCM_Buffer[j++] = AudioInBuff0[i];
+  	PCM_Buffer[j++] = AudioInBuff0[i+1];
     */
     PCM_Buffer[j++] = counter;
     PCM_Buffer[j++] = counter++;
-	}
-	MicProcess();
+  }
+  MicProcess();
+  
 	//HAL_GPIO_WritePin(Mon_GPIO_Port, Mon_Pin, 0);
 }
 
@@ -485,8 +504,9 @@ void ADCCpltCycle(ADC_HandleTypeDef* hadc)
 {
 	uint32_t i, j=0;
 
-	HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, 0);
-  UTIL_TIMER_Start(&TxLedTimer);
+	//HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, 0);
+  //UTIL_TIMER_Start(&TxLedTimer);
+  //HAL_GPIO_WritePin(GPIO2_GPIO_Port, GPIO2_Pin, 0);
 
 	for(i = AUDIO_IN_BUFFER_SIZE/2; i< AUDIO_IN_BUFFER_SIZE; i+=2)
 	{

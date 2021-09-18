@@ -88,8 +88,6 @@ void MX_ADC_Init(void)
 
 }
 
-
-
 void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
 {
 
@@ -120,7 +118,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
 
     /* ADC DMA Init */
     /* ADC Init */
-    hdma_adc.Instance = DMA1_Channel1;
+    hdma_adc.Instance = DMA2_Channel1;
     hdma_adc.Init.Request = DMA_REQUEST_ADC;
     hdma_adc.Init.Direction = DMA_PERIPH_TO_MEMORY;
     hdma_adc.Init.PeriphInc = DMA_PINC_DISABLE;

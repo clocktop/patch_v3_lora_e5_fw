@@ -12,6 +12,7 @@
         "dma.h": "c",
         "spi.h": "c",
         "usart.h": "c",
-        "datalog.h": "c"
+        "datalog.h": "c",
+        "ff.h": "c"
     }
 }

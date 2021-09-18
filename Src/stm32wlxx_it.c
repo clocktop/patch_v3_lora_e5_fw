@@ -232,20 +232,6 @@ void EXTI0_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles DMA1 Channel 1 Interrupt.
-  */
-void DMA1_Channel1_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA1_Channel1_IRQn 0 */
-
-  /* USER CODE END DMA1_Channel1_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_adc);
-  /* USER CODE BEGIN DMA1_Channel1_IRQn 1 */
-
-  /* USER CODE END DMA1_Channel1_IRQn 1 */
-}
-
-/**
   * @brief This function handles DMA1 Channel 5 Interrupt.
   */
 void DMA1_Channel5_IRQHandler(void)
@@ -299,6 +285,20 @@ void SUBGHZ_Radio_IRQHandler(void)
   /* USER CODE BEGIN SUBGHZ_Radio_IRQn 1 */
 
   /* USER CODE END SUBGHZ_Radio_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA2 Channel 1 Interrupt.
+  */
+void DMA2_Channel1_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Channel1_IRQn 0 */
+
+  /* USER CODE END DMA2_Channel1_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_adc);
+  /* USER CODE BEGIN DMA2_Channel1_IRQn 1 */
+
+  /* USER CODE END DMA2_Channel1_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
