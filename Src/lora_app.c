@@ -147,6 +147,7 @@ void MicProcess(void);
 void EnableSDLog(void);
 void DisableSDLog(void);
 void WriteSD(void);
+static void SendTx_Filenum();
 /* USER CODE END PFP */
 
 /* Private variables ---------------------------------------------------------*/
@@ -315,6 +316,36 @@ void LoRaWAN_Init(void)
 
 /* Private functions ---------------------------------------------------------*/
 /* USER CODE BEGIN PrFD */
+static void SendTx_Filenum(void)
+{
+  /* USER CODE BEGIN SendTxData_1 */
+  UTIL_TIMER_Time_t nextTxIn = 0;
+  uint32_t i = 0;
+  //temperature = (SYS_GetTemperatureLevel() >> 8);
+
+  AppData.Port = LORAWAN_FILE_NUM_PORT;
+
+  AppData.Buffer[i++] = (uint8_t)((sdcard_file_counter >> 8));
+  AppData.Buffer[i++] = (uint8_t)((sdcard_file_counter) & 0xFF);
+
+
+  AppData.BufferSize = i;
+  if (LmHandlerSetTxPower(TX_POWER_14) == LORAMAC_HANDLER_ERROR)
+  {
+	APP_LOG(TS_OFF, VLEVEL_M, "\r\n###### ========== Didn't set tx power ==========\r\n");
+  }
+
+  if (LORAMAC_HANDLER_SUCCESS == LmHandlerSend(&AppData, LORAWAN_DEFAULT_CONFIRMED_MSG_STATE, &nextTxIn, false))
+  {
+    APP_LOG(TS_ON, VLEVEL_L, "SEND REQUEST\r\n");
+  }
+  else if (nextTxIn > 0)
+  {
+    APP_LOG(TS_ON, VLEVEL_L, "Next Tx in  : ~%d second(s)\r\n", (nextTxIn / 1000));
+  }
+  /* USER CODE END SendTxData_1 */
+}
+
 void EnableSDLog(void)
 {
   // first turn off the pull downs on the spi bus
@@ -349,6 +380,7 @@ void EnableSDLog(void)
       DATALOG_SD_DeInit();
       return;
     }
+    SendTx_Filenum();
     APP_LOG(TS_OFF, VLEVEL_L, "LOG EN\r\n");
 
     // Start ADC and Timer

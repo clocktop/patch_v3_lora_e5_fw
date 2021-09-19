@@ -233,7 +233,7 @@ uint8_t DATALOG_SD_Log_Enable(void)
   //SD_IO_CS_Init();
   MX_SPI2_Init();
   HAL_Delay(100);
-  SDTest();
+  //SDTest();
   mounted = 0;
   if(mounted == 0){
     res = f_mount(&SDFatFs, "", 1); //1=mount no

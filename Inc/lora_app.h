@@ -106,6 +106,7 @@ extern "C" {
 
 /* USER CODE BEGIN EC */
 extern uint16_t AudioInBuff0[AUDIO_IN_BUFFER_SIZE];
+#define LORAWAN_FILE_NUM_PORT                       3
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
