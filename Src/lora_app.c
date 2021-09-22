@@ -50,6 +50,7 @@
 extern uint16_t sdcard_file_counter;
 extern ADC_HandleTypeDef ADC_HANDLE;
 extern TIM_HandleTypeDef ADC_TIM_HANDLE;
+uint8_t patch_status = 0;
 /* USER CODE END EV */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -77,7 +78,10 @@ typedef enum TxEventType_e
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define LOGGING_STATUS_MASK       1
+#define FAST_MODE_STATUS_MASK     2
+#define BATT_CONN_MASK            4
+#define BATT_CHRG_MASK            8
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -216,7 +220,6 @@ static LmHandlerAppData_t AppData = { 0, 0, AppDataBuffer };
 /**
   * @brief Specifies the state of the application LED
   */
-static uint8_t AppLedStateOn = RESET;
 
 volatile  int  index_buff=0;
 volatile uint8_t write_flag=0;
@@ -323,11 +326,11 @@ static void SendTx_Filenum(void)
   uint32_t i = 0;
   //temperature = (SYS_GetTemperatureLevel() >> 8);
 
-  AppData.Port = LORAWAN_FILE_NUM_PORT;
+  AppData.Port = LORAWAN_USER_APP_PORT;
 
   AppData.Buffer[i++] = (uint8_t)((sdcard_file_counter >> 8));
   AppData.Buffer[i++] = (uint8_t)((sdcard_file_counter) & 0xFF);
-
+  AppData.Buffer[i++] = (uint8_t)(patch_status);
 
   AppData.BufferSize = i;
   if (LmHandlerSetTxPower(TX_POWER_14) == LORAMAC_HANDLER_ERROR)
@@ -354,8 +357,8 @@ void EnableSDLog(void)
   {
     // Do not allow low power mode while logging
     APP_LOG(TS_OFF, VLEVEL_L, "LPM CONFIG\r\n");
-    UTIL_LPM_SetOffMode(1 << CFG_LPM_APPLI_Id, UTIL_LPM_DISABLE);
-    UTIL_LPM_SetStopMode(1 << CFG_LPM_APPLI_Id, UTIL_LPM_DISABLE);
+    UTIL_LPM_SetOffMode((1 << CFG_LPM_SDLOG), UTIL_LPM_DISABLE);
+    UTIL_LPM_SetStopMode((1 << CFG_LPM_SDLOG), UTIL_LPM_DISABLE);
     //DeConfigureSDPullDown();
 
     // Set up FatFS SD Card
@@ -380,6 +383,7 @@ void EnableSDLog(void)
       DATALOG_SD_DeInit();
       return;
     }
+    patch_status |= LOGGING_STATUS_MASK;
     SendTx_Filenum();
     APP_LOG(TS_OFF, VLEVEL_L, "LOG EN\r\n");
 
@@ -393,12 +397,14 @@ void EnableSDLog(void)
       HAL_Delay(10);
         
       __enable_irq();
-      setup_first = 1;
-      HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
+      setup_first = 0;
+      
     }
+    res = HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*)AudioInBuff0, AUDIO_IN_BUFFER_SIZE);
+    __enable_irq();
     MsInBuff = 0;  
-    res = HAL_TIM_Base_Start(&ADC_TIM_HANDLE);
-    
+    HAL_TIM_Base_Start(&ADC_TIM_HANDLE);
+
     uint32_t reg;
     reg = hadc.Instance->ISR;
     APP_LOG(TS_OFF, VLEVEL_L, "ISR REG: %x \r\n", reg);
@@ -427,7 +433,7 @@ void DisableSDLog(void)
   if(SD_Log_Enabled == 1)
   {
     // Stop ADC and Timer
-    //HAL_ADC_Stop_DMA(&ADC_HANDLE);
+    HAL_ADC_Stop_DMA(&ADC_HANDLE);
     HAL_TIM_Base_Stop(&ADC_TIM_HANDLE);
     //TIM2->CR1 &= ~(TIM_CR1_CEN);
     //MX_TIM2_Init();
@@ -437,11 +443,13 @@ void DisableSDLog(void)
     SD_Log_Enabled = 0;
     tim_val = __HAL_TIM_GET_COUNTER(&ADC_TIM_HANDLE);
     APP_LOG(TS_OFF, VLEVEL_L, "TIM VAL: %d \r\n",tim_val);
+    patch_status &= ~LOGGING_STATUS_MASK;
     
     
 
     // Close off the SD log file 
     DATALOG_SD_Log_Disable();
+    SendTx_Filenum();
     //f_mount(NULL, "", 0);
 
     // Unmount SD Card and unlink driver
@@ -452,8 +460,8 @@ void DisableSDLog(void)
     
     //HAL_ADC_MspDeInit(&ADC_HANDLE);
     // Allow low power mode
-    //UTIL_LPM_SetOffMode(1 << CFG_LPM_APPLI_Id, UTIL_LPM_ENABLE);
-    //UTIL_LPM_SetStopMode(1 << CFG_LPM_APPLI_Id, UTIL_LPM_ENABLE);
+    //UTIL_LPM_SetOffMode((1 << CFG_LPM_SDLOG), UTIL_LPM_ENABLE);
+    UTIL_LPM_SetStopMode((1 << CFG_LPM_SDLOG), UTIL_LPM_ENABLE);
 
     //HAL_GPIO_WritePxin(LED_B_GPIO_Port, LED_B_Pin, 1);
     uint32_t reg;
@@ -474,12 +482,13 @@ void WriteSD(void)
   
   while(MsInBuff > 0)
   	{
-  		HAL_GPIO_WritePin(GPIO2_GPIO_Port,GPIO2_Pin, 1);
+  		//HAL_GPIO_WritePin(GPIO2_GPIO_Port,GPIO2_Pin, 1);
+      HAL_GPIO_TogglePin(LED_G_GPIO_Port, LED_G_Pin);
       write_ms_on_sd();
   		__disable_irq();
   		MsInBuff--;
   		__enable_irq();
-      HAL_GPIO_WritePin(GPIO2_GPIO_Port,GPIO2_Pin, 0);
+      //HAL_GPIO_WritePin(GPIO2_GPIO_Port,GPIO2_Pin, 0);
       if(MsInBuff > 250)
       {
         HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, 0);
@@ -520,12 +529,12 @@ void ADCHalfCycle(ADC_HandleTypeDef* hadc)
   //APP_LOG(TS_OFF, VLEVEL_L, "H\r\n");
   for(i=0; i < AUDIO_IN_BUFFER_SIZE/2; i+=2)
   {
-    /*
+    
   	PCM_Buffer[j++] = AudioInBuff0[i];
   	PCM_Buffer[j++] = AudioInBuff0[i+1];
-    */
-    PCM_Buffer[j++] = counter;
-    PCM_Buffer[j++] = counter++;
+    
+    //PCM_Buffer[j++] = counter;
+    //PCM_Buffer[j++] = counter++;
   }
   MicProcess();
   
@@ -542,12 +551,12 @@ void ADCCpltCycle(ADC_HandleTypeDef* hadc)
 
 	for(i = AUDIO_IN_BUFFER_SIZE/2; i< AUDIO_IN_BUFFER_SIZE; i+=2)
 	{
-    /*
+    
 		PCM_Buffer[j++] = AudioInBuff0[i];
 		PCM_Buffer[j++] = AudioInBuff0[i+1];
-    */
-    PCM_Buffer[j++] = counter;
-    PCM_Buffer[j++] = counter++;
+    
+    //PCM_Buffer[j++] = counter;
+    //PCM_Buffer[j++] = counter++;
 	}
 	MicProcess();
 	//HAL_GPIO_WritePin(Mon_GPIO_Port, Mon_Pin, 0);
@@ -596,6 +605,7 @@ static void OnRxData(LmHandlerAppData_t *appData, LmHandlerRxParams_t *params)
         }
         break;
       case LORAWAN_USER_APP_PORT:
+        APP_LOG(TS_OFF, VLEVEL_L, "Buffer size %d", appData->BufferSize);
         if (appData->BufferSize == 1)
         {
           /*
@@ -630,12 +640,14 @@ static void OnRxData(LmHandlerAppData_t *appData, LmHandlerRxParams_t *params)
            
          case 50:
            APP_LOG(TS_OFF, VLEVEL_L, "Fast Mode on\r\n");
+           patch_status |= FAST_MODE_STATUS_MASK;
            UTIL_TIMER_Stop(&TxTimer);
            UTIL_TIMER_SetPeriod(&TxTimer,  3000);
            UTIL_TIMER_Start(&TxTimer);
            break;
          case 51: 
            APP_LOG(TS_OFF, VLEVEL_L, "Fast Mode off\r\n");
+           patch_status &= ~ FAST_MODE_STATUS_MASK;
            UTIL_TIMER_Stop(&TxTimer);
            UTIL_TIMER_SetPeriod(&TxTimer,  APP_TX_DUTYCYCLE);
            UTIL_TIMER_Start(&TxTimer);
@@ -654,54 +666,33 @@ static void OnRxData(LmHandlerAppData_t *appData, LmHandlerRxParams_t *params)
 static void SendTxData(void)
 {
   /* USER CODE BEGIN SendTxData_1 */
-  uint16_t pressure = 0;
-  int16_t temperature = 0;
-  sensor_t sensor_data;
   UTIL_TIMER_Time_t nextTxIn = 0;
-
-  uint16_t humidity = 0;
   uint32_t i = 0;
-  int32_t latitude = 0;
-  int32_t longitude = 0;
-  uint16_t altitudeGps = 0;
 
-  EnvSensors_Read(&sensor_data);
-  //temperature = (SYS_GetTemperatureLevel() >> 8);
-  pressure    = (uint16_t)(sensor_data.pressure * 100 / 10);      /* in hPa / 10 */
-
-  AppData.Port = LORAWAN_USER_APP_PORT;
-  humidity    = (uint16_t)(sensor_data.humidity * 10);            /* in %*10     */
-
-  AppData.Buffer[i++] = AppLedStateOn;
-  AppData.Buffer[i++] = (uint8_t)((pressure >> 8) & 0xFF);
-  AppData.Buffer[i++] = (uint8_t)(pressure & 0xFF);
-  AppData.Buffer[i++] = (uint8_t)(temperature & 0xFF);
-  AppData.Buffer[i++] = (uint8_t)((humidity >> 8) & 0xFF);
-  AppData.Buffer[i++] = (uint8_t)(humidity & 0xFF);
-
-  if ((LmHandlerParams.ActiveRegion == LORAMAC_REGION_US915) || (LmHandlerParams.ActiveRegion == LORAMAC_REGION_AU915)
-      || (LmHandlerParams.ActiveRegion == LORAMAC_REGION_AS923))
+  if (HAL_GPIO_ReadPin(BATT_CHRG_GPIO_Port, BATT_CHRG_Pin) == GPIO_PIN_SET)
   {
-    AppData.Buffer[i++] = 0;
-    AppData.Buffer[i++] = 0;
-    AppData.Buffer[i++] = 0;
-    AppData.Buffer[i++] = 0;
+    patch_status |= BATT_CHRG_MASK;
   }
   else
   {
-    latitude = sensor_data.latitude;
-    longitude = sensor_data.longitude;
-
-    AppData.Buffer[i++] = GetBatteryLevel();        /* 1 (very low) to 254 (fully charged) */
-    AppData.Buffer[i++] = (uint8_t)((latitude >> 16) & 0xFF);
-    AppData.Buffer[i++] = (uint8_t)((latitude >> 8) & 0xFF);
-    AppData.Buffer[i++] = (uint8_t)(latitude & 0xFF);
-    AppData.Buffer[i++] = (uint8_t)((longitude >> 16) & 0xFF);
-    AppData.Buffer[i++] = (uint8_t)((longitude >> 8) & 0xFF);
-    AppData.Buffer[i++] = (uint8_t)(longitude & 0xFF);
-    AppData.Buffer[i++] = (uint8_t)((altitudeGps >> 8) & 0xFF);
-    AppData.Buffer[i++] = (uint8_t)(altitudeGps & 0xFF);
+    patch_status &= ~BATT_CHRG_MASK;
   }
+
+  if (HAL_GPIO_ReadPin(BATT_CONN_GPIO_Port, BATT_CONN_Pin) == GPIO_PIN_SET)
+  {
+    patch_status |= BATT_CONN_MASK;
+  }
+  else
+  {
+    patch_status &= ~BATT_CONN_MASK;
+  }
+
+  AppData.Port = LORAWAN_USER_APP_PORT;
+
+  AppData.Buffer[i++] = (uint8_t)((sdcard_file_counter >> 8));
+  AppData.Buffer[i++] = (uint8_t)((sdcard_file_counter) & 0xFF);
+  AppData.Buffer[i++] = (uint8_t)(patch_status);
+
 
   AppData.BufferSize = i;
   if (LmHandlerSetTxPower(TX_POWER_14) == LORAMAC_HANDLER_ERROR)

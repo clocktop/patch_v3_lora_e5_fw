@@ -13,6 +13,8 @@
         "spi.h": "c",
         "usart.h": "c",
         "datalog.h": "c",
-        "ff.h": "c"
+        "ff.h": "c",
+        "stm32_lpm.h": "c",
+        "stm32_lpm_if.h": "c"
     }
 }

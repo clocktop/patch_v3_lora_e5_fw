@@ -168,6 +168,14 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 }
 
 /* USER CODE BEGIN 1 */
+void DMA_ADC_Resume(void)
+{
+  if (HAL_DMA_Init(&hdma_adc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
 void MX_ADC_Init_pre(void)
 {
 

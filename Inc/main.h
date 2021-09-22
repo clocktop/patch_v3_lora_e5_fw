@@ -85,6 +85,10 @@ void SDTest(void);
 /* USER CODE BEGIN Private defines */
 #define GPIO2_Pin GPIO_PIN_7
 #define GPIO2_GPIO_Port GPIOB
+#define BATT_CHRG_Pin GPIO_PIN_3
+#define BATT_CHRG_GPIO_Port GPIOB
+#define BATT_CONN_Pin GPIO_PIN_9
+#define BATT_CONN_GPIO_Port GPIOA
 #define SD_SPI_HANDLE hspi2
 #define ADC_HANDLE hadc
 #define ADC_TIM_HANDLE htim2

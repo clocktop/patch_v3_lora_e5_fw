@@ -41,6 +41,7 @@ void MX_ADC_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 void MX_ADC_Init_pre(void);
+void DMA_ADC_Resume(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

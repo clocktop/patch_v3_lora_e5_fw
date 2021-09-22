@@ -21,9 +21,9 @@ extern volatile uint8_t SD_Log_Enabled;
 extern uint16_t sdcard_file_counter;
 
 #define AUDIO_CHANNELS 2
-#define AUDIO_SAMPLING_FREQUENCY 8000
+#define AUDIO_SAMPLING_FREQUENCY 4000
 
-#define NUM_MS                          64
+#define NUM_MS                          32
 #define PCM_SAMPLES_X_MS              	(AUDIO_SAMPLING_FREQUENCY/1000*AUDIO_CHANNELS)*NUM_MS
 //#define PCM_SAMPLES_X_MS                (128*2)
 #define PCM_BYTES_X_MS                	(PCM_SAMPLES_X_MS*2)
